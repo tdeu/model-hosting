@@ -1,4 +1,3 @@
-@"
 import tensorflowjs as tfjs
 import tensorflow as tf
 import gdown
@@ -30,4 +29,3 @@ def convert_h5_to_tfjs():
 
 if __name__ == '__main__':
     convert_h5_to_tfjs()
-"@ | Out-File -FilePath scripts/convert_model.py -Encoding UTF8
