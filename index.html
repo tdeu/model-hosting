@@ -1,0 +1,31 @@
+@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>African Mask Classifier Model</title>
+    <meta http-equiv="Access-Control-Allow-Origin" content="*">
+    <meta http-equiv="Access-Control-Allow-Methods" content="GET, HEAD, OPTIONS">
+    <meta http-equiv="Access-Control-Allow-Headers" content="Content-Type">
+    <meta http-equiv="Cross-Origin-Resource-Policy" content="cross-origin">
+</head>
+<body>
+    <h1>African Mask Classifier Model</h1>
+    <p>This page hosts the TensorFlow.js model files for the African Mask Classifier.</p>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script>
+        async function verifyModel() {
+            try {
+                const model = await tf.loadLayersModel('./model/model.json');
+                console.log('Model verified successfully!');
+                document.body.innerHTML += '<p style="color: green;">Model verified successfully!</p>';
+            } catch (error) {
+                console.error('Model verification failed:', error);
+                document.body.innerHTML += `<p style="color: red;">Model verification failed: ${error.message}</p>`;
+            }
+        }
+        verifyModel();
+    </script>
+</body>
+</html>
+"@ | Out-File -FilePath index.html -Encoding UTF8
