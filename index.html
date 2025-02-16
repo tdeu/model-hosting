@@ -4,26 +4,133 @@
     <meta charset="utf-8">
     <title>African Mask Classifier Model</title>
     <meta http-equiv="Access-Control-Allow-Origin" content="*">
-    <meta http-equiv="Access-Control-Allow-Methods" content="GET, HEAD, OPTIONS">
-    <meta http-equiv="Access-Control-Allow-Headers" content="Content-Type">
+    <meta http-equiv="Access-Control-Allow-Methods" content="GET, POST, HEAD, OPTIONS">
+    <meta http-equiv="Access-Control-Allow-Headers" content="Origin, Content-Type, Accept">
     <meta http-equiv="Cross-Origin-Resource-Policy" content="cross-origin">
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #preview {
+            max-width: 300px;
+            margin: 10px 0;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <h1>African Mask Classifier Model</h1>
-    <p>This page hosts the TensorFlow.js model files for the African Mask Classifier.</p>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <p>Upload an image of an African mask to classify its tribal origin.</p>
+
+    <div class="upload-section">
+        <input type="file" id="imageUpload" accept="image/*">
+        <img id="preview" style="display: none;">
+        <div id="result"></div>
+        <div id="modelStatus"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.15.0/dist/tf.min.js"></script>
     <script>
-        async function verifyModel() {
+        const classes = ['Dan_Yacouba', 'Makonde', 'Songye', 'Other'];
+        let model = null;
+
+        async function loadModel() {
             try {
-                const model = await tf.loadLayersModel('./model/model.json');
-                console.log('Model verified successfully!');
-                document.body.innerHTML += '<p style="color: green;">Model verified successfully!</p>';
+                model = await tf.loadLayersModel('./model/model.json', {
+                    requestInit: {
+                        mode: 'cors',
+                        credentials: 'same-origin'
+                    }
+                });
+                document.getElementById('modelStatus').innerHTML = 
+                    '<p style="color: green;">Model loaded successfully!</p>';
+                console.log('Model loaded successfully');
             } catch (error) {
-                console.error('Model verification failed:', error);
-                document.body.innerHTML += `<p style="color: red;">Model verification failed: ${error.message}</p>`;
+                console.error('Error loading model:', error);
+                document.getElementById('modelStatus').innerHTML = 
+                    `<p style="color: red;">Error loading model: ${error.message}</p>`;
             }
         }
-        verifyModel();
+
+        async function preprocessImage(image) {
+            return tf.tidy(() => {
+                const tensor = tf.browser.fromPixels(image)
+                    .resizeNearestNeighbor([224, 224])
+                    .toFloat()
+                    .expandDims();
+                return tensor.div(255.0);
+            });
+        }
+
+        async function predict(image) {
+            if (!model) {
+                throw new Error('Model not loaded');
+            }
+            
+            const tensor = await preprocessImage(image);
+            try {
+                const predictions = await model.predict(tensor).data();
+                tensor.dispose();
+
+                const maxProbability = Math.max(...predictions);
+                const predictedClass = classes[predictions.indexOf(maxProbability)];
+                
+                return {
+                    class: predictedClass,
+                    probability: maxProbability
+                };
+            } catch (error) {
+                tensor.dispose();
+                throw error;
+            }
+        }
+
+        document.getElementById('imageUpload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const preview = document.getElementById('preview');
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = async () => {
+                    try {
+                        const result = await predict(img);
+                        document.getElementById('result').innerHTML = 
+                            `Predicted Class: ${result.class}<br>
+                             Confidence: ${(result.probability * 100).toFixed(2)}%`;
+                    } catch (error) {
+                        console.error('Prediction error:', error);
+                        document.getElementById('result').innerHTML = 
+                            `Error during prediction: ${error.message}`;
+                    }
+                };
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        // Load model when page loads
+        window.addEventListener('load', loadModel);
     </script>
 </body>
 </html>
