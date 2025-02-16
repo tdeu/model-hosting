@@ -1,0 +1,37 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # Create _headers file for Netlify-like header control
+      - name: Create headers file
+        run: |
+          mkdir -p dist
+          cp -r model dist/
+          cp test.html dist/
+          cat > dist/_headers << EOL
+          /*
+            Access-Control-Allow-Origin: *
+            Access-Control-Allow-Methods: GET, OPTIONS
+            Access-Control-Allow-Headers: Content-Type
+            Content-Type: application/json
+          /model/*.json
+            Content-Type: application/json
+          /model/*.bin
+            Content-Type: application/octet-stream
+          EOL
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          enable_jekyll: false 

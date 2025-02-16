@@ -21,7 +21,7 @@ def convert_h5_to_tfjs():
         temp_dir, output_dir = ensure_directories()
         
         # Download your model from Google Drive
-        file_id = '1XrWEZJWOluRv2nMUiGmifiLnvzKkfUY9'  # Updated to your model's file ID
+        file_id = '1XrWEZJWOluRv2nMUiGmifiLnvzKkfUY9'
         output = temp_dir / 'model.h5'
         
         print('Downloading model from Google Drive...')
@@ -32,6 +32,15 @@ def convert_h5_to_tfjs():
             
         print('Loading Keras model...')
         model = tf.keras.models.load_model(str(output))
+        
+        # Create a new model with explicit input shape if needed
+        if not model.inputs[0].shape.as_list()[1:]:
+            input_shape = (224, 224, 3)  # Standard image input shape
+            inputs = tf.keras.Input(shape=input_shape)
+            x = model.layers[0](inputs)
+            for layer in model.layers[1:]:
+                x = layer(x)
+            model = tf.keras.Model(inputs=inputs, outputs=x)
         
         print('Model architecture:')
         model.summary()

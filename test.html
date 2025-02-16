@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.13.0"></script>
+</head>
+<body>
+    <h1>Model Test Page</h1>
+    <div id="status"></div>
+    <pre id="modelJson"></pre>
+
+    <script>
+        async function loadAndTestModel() {
+            const statusDiv = document.getElementById('status');
+            const modelJsonDiv = document.getElementById('modelJson');
+            
+            try {
+                // First try to fetch the model.json directly
+                statusDiv.textContent = 'Fetching model.json...';
+                const response = await fetch('model/model.json');
+                const modelJson = await response.json();
+                modelJsonDiv.textContent = JSON.stringify(modelJson, null, 2);
+                
+                // Then try to load the model
+                statusDiv.textContent = 'Loading model...';
+                const model = await tf.loadLayersModel('model/model.json', {
+                    onProgress: (fraction) => {
+                        statusDiv.textContent = `Loading model: ${(fraction * 100).toFixed(1)}%`;
+                    }
+                });
+                
+                statusDiv.textContent = 'Model loaded successfully!';
+                model.summary();
+                
+            } catch (error) {
+                statusDiv.textContent = 'Error: ' + error.message;
+                console.error('Full error:', error);
+            }
+        }
+
+        // Run test when page loads
+        loadAndTestModel();
+    </script>
+</body>
+</html> 
